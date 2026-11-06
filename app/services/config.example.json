@@ -1,0 +1,55 @@
+{
+  "_comment": "Private per-install configuration. Bootstrap generates gateway.token locally; never publish a real key.",
+  "engine": {
+    "host": "127.0.0.1",
+    "port": 9880,
+    "timeout": 120,
+    "allow_voice_switch": false
+  },
+  "default_voice": "si",
+  "seed": 20261014,
+  "voices": {
+    "si": {
+      "ref_audio_path": "@APP_ROOT@/models/voices/si/ref_si.wav",
+      "prompt_text": "你的小监督和你简直一个样，都快要站着睡着了，还在那硬撑着。",
+      "text_lang": "zh",
+      "prompt_lang": "zh",
+      "sample_steps": 4,
+      "speed_factor": 0.88
+    }
+  },
+  "segment": {
+    "first_min": 20,
+    "first_max": 40,
+    "chunk_min": 36,
+    "chunk_max": 48,
+    "tail_slack": 8
+  },
+  "audio": {
+    "sample_rate": 24000,
+    "segment_pause_ms": 200,
+    "lead_trim_ms": 250,
+    "fade_ms": 20,
+    "seam_fade_ms": 6,
+    "max_inflight": 2,
+    "max_queued_bytes": 576000,
+    "chars_per_sec": 4.5,
+    "warmup": true,
+    "warmup_text": "你好。"
+  },
+  "gateway": {
+    "host": "127.0.0.1",
+    "port": 9881,
+    "token": "",
+    "max_concurrent_per_ip": 2,
+    "engine_wait_s": 30
+  },
+  "network": {
+    "lan_enabled": false,
+    "lan_port": 9890
+  },
+  "tts_defaults": {
+    "speed_factor": 0.88,
+    "sample_steps": 4
+  }
+}

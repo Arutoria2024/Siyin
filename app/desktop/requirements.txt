@@ -1,0 +1,6 @@
+pywebview==5.4
+pystray==0.19.5
+psutil==7.0.0
+pythonnet==3.0.5
+clr-loader==0.2.7.post0
+Pillow==11.1.0

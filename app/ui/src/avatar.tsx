@@ -1,0 +1,2 @@
+import React,{useState,useEffect} from 'react';import{AudioLines,FileAudio}from'lucide-react';
+export function Avatar({task}:{task:any}){const info=task?.identity;const[failed,setFailed]=useState(false);useEffect(()=>setFailed(false),[info?.avatar]);return <span className="identity-avatar">{info?.avatar&&!failed?<img src={info.avatar} alt={info.name||'音色头像'} onError={()=>setFailed(true)}/>:task?.source_type==='import'?<FileAudio size={19}/>:<AudioLines size={19}/>}</span>}

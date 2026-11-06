@@ -1,0 +1,12 @@
+{
+  "name": "sidev",
+  "version": "v5dev",
+  "ar": "@APP_ROOT@/models/voices/si/gsv-ar-si-e12-f16b.gguf",
+  "cond": "@APP_ROOT@/models/gsv-v5dev-cond-f16.gguf",
+  "dit": "@APP_ROOT@/models/gsv-v5dev-dit-f16all.gguf",
+  "refcode": "@APP_ROOT@/models/gsv-v5dev-refcode.gguf",
+  "bert": "@APP_ROOT@/models/gsv-bert-f16.gguf",
+  "hubert": "@APP_ROOT@/models/gsv-hubert-f16.gguf",
+  "vocoder": "@APP_ROOT@/models/gsv-vocoder-f32.gguf",
+  "filter": "@APP_ROOT@/models/resampy_kaiser_best.bin"
+}

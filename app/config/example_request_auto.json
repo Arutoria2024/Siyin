@@ -1,0 +1,1 @@
+{"text": "你好，我是祀。今天的风有点凉。", "text_lang": "zh", "ref_audio_path": "@APP_ROOT@/models/voices/si/ref_si.wav", "prompt_text": "你的小监督和你简直一个样，都快要站着睡着了，还在那硬撑着。", "prompt_lang": "zh", "seed": 20261014, "sample_steps": 4}

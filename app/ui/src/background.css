@@ -1,0 +1,24 @@
+.workspace{position:relative;isolation:isolate;background:var(--bg)}
+.workspace>header,.workspace>main{position:relative;z-index:1}
+.workspace>header{background:color-mix(in srgb,var(--bg) 84%,transparent)}
+.background-art{position:fixed;inset:70px 0 85px 222px;z-index:0;overflow:hidden;pointer-events:none;user-select:none;color:#729b87;contain:strict}
+.background-wash{position:absolute;inset:0;background:radial-gradient(ellipse at 93% 2%,#a3cfb927,transparent 47%),radial-gradient(ellipse at 4% 90%,#c6d78a1a,transparent 45%)}
+.background-word{position:absolute;right:25px;top:10px;font-size:clamp(85px,11vw,180px);font-weight:800;line-height:.88;letter-spacing:-10px;background:linear-gradient(125deg,#aac95b6b,#5fae9430 55%,#46786b00);-webkit-background-clip:text;background-clip:text;color:transparent;opacity:.45}
+.background-word span{display:block;font-size:9px;letter-spacing:4px;margin:19px 0 0 12px;color:#46786b65;font-weight:500}
+.contour-art{position:absolute;right:-135px;top:70px;width:530px;height:470px;stroke:currentColor;stroke-width:.8;opacity:.2;transform:rotate(-17deg)}
+.fan-art{position:absolute;width:145px;stroke:currentColor;stroke-width:.65;opacity:.24}
+.fan-top{left:35%;top:14px;transform:rotate(-18deg)}
+.geometry-art{position:absolute;left:-23px;bottom:35px;width:166px;color:#a0b661;opacity:.19}
+.ink-art{position:absolute;right:-65px;bottom:-68px;width:460px;opacity:.13;color:#315a47}
+.registration-art{position:absolute;right:28px;top:46%;display:flex;flex-direction:column;align-items:center;gap:14px;opacity:.3;font:12px monospace}
+.registration-art i{height:72px;border-left:1px solid currentColor}.registration-art b{font-size:8px;font-weight:400;writing-mode:vertical-rl;letter-spacing:2px}
+.fan-bottom{position:absolute;left:26%;bottom:-48px;width:250px;transform:rotate(11deg);stroke:currentColor;stroke-width:.6;opacity:.17}
+.page-heading .heading-mark{opacity:.18}
+.panel{box-shadow:0 4px 20px #243b2905}
+[data-theme=dark] .background-art{color:#a1c2ab}
+[data-theme=dark] .background-wash{opacity:.48}
+[data-theme=dark] .background-word{opacity:.22}
+[data-theme=dark] .ink-art{color:#96b7a0;opacity:.12}
+[data-theme=dark] .geometry-art{opacity:.12}
+@media(max-width:1100px){.background-art{left:185px}.contour-art{width:420px;right:-160px}.fan-top{left:28%}}
+@media(max-width:820px){.background-word{font-size:95px;right:-20px;opacity:.3}.geometry-art{width:110px}.fan-top{width:100px;left:15%}.ink-art{width:300px}.registration-art{display:none}}
