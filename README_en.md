@@ -33,6 +33,13 @@ This release is a **character-specific voice edition**: a fine-tuned voice of **
 | 🟡 Try | Intel Arc A/B, Vulkan-capable iGPU | may be slower with shared memory |
 | 🔴 Not recommended | GPUs without Vulkan / CPU-only | works but ~14.6× slower |
 
+## Roadmap
+
+- ✅ **v1.0.0** — character-specific voice edition of "Shi" (祀); all-in-one, RTF ≈ 0.2.
+- 🚧 **General-purpose edition** — arbitrary voices / custom reference audio (in development).
+- 📋 Public access over HTTPS (currently local + optional authenticated LAN entry).
+- 📋 More screenshots and usage docs.
+
 ## Features
 
 - 🎙️ Text / TXT batch synthesis with automatic long-text segmentation.

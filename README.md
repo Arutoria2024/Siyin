@@ -12,6 +12,7 @@
 > **一体化软件，安装即用**：内置推理引擎、文本前端、模型与音色，装好双击就能合成——**无需训练、无需微调、无需克隆音色**，也不用自己准备参考音频。
 
 [![Release](https://img.shields.io/github/v/release/Arutoria2024/Siyin?color=6f4e37&label=Release)](https://github.com/Arutoria2024/Siyin/releases)
+[![Downloads](https://img.shields.io/github/downloads/Arutoria2024/Siyin/total?color=6f4e37&label=Downloads)](https://github.com/Arutoria2024/Siyin/releases)
 [![License](https://img.shields.io/github/license/Arutoria2024/Siyin?color=2f6f4f&label=License)](LICENSE)
 [![Platform](https://img.shields.io/badge/Platform-Windows%2010%2F11-0078D6?logo=windows)](https://www.microsoft.com/windows)
 [![Python](https://img.shields.io/badge/Python-3.10-3776AB?logo=python&logoColor=white)](https://www.python.org/)
@@ -151,6 +152,17 @@ npm run build          # 生成 app/ui/dist
 - **网关 401**：客户端 Key 与 `gateway.token` 不一致，或修改 Key 后未重启网关。
 - **本机可用、局域网不通**：检查服务电脑 IP、TCP 与防火墙；局域网入口默认 9890，需在设置页开启。
 - **导不出某格式**：确认 `app/tools/ffmpeg` 内 FFmpeg 编码器可用、磁盘空间充足、路径无异常。
+
+## 🗺️ 路线图
+
+| 状态 | 事项 |
+|---|---|
+| ✅ 已发布 | **v1.0.0**：角色「祀」专用音色版，一体化安装即用，RTF ≈ 0.2 |
+| 🚧 开发中 | **通用音色版**：支持任意音色 / 自定义参考音频，不再局限于单一角色 |
+| 📋 计划 | 公网访问与 HTTPS（当前仅本机 + 可选局域网入口） |
+| 📋 计划 | 补齐作品库 / 任务队列 / 性能监控等界面截图与更多使用文档 |
+
+> 路线图只是方向，不代表承诺的发布时间。
 
 ## 🤝 参与贡献
 
