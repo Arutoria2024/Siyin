@@ -101,3 +101,4 @@ desktop.ini
 /_ghtoken.txt
 _*.tmp
 /_push.sh
+/.upgrade/

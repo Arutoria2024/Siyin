@@ -2,7 +2,11 @@
 import base64, collections, hashlib, http.client, json, os, re, secrets, shutil, sqlite3, subprocess, threading, time, urllib.request, uuid, wave
 from pathlib import Path
 from identities import identity,title_for,migrate
+import sys
 ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0,str(ROOT/'services'))
+from postprocess import profile, polish_file
+from core import text_language
 DATA = ROOT / 'out' / 'workbench'
 DATA.mkdir(parents=True, exist_ok=True)
 DB = DATA / 'library.sqlite'
@@ -50,12 +54,32 @@ def add(body):
     if voice not in config['voices']:raise ValueError('音色不存在')
     speed=float(body.get('speed',config['voices'][voice].get('speed_factor',.88)));sr=int(body.get('sr',24000))
     if not .6<=speed<=1.2 or sr not in (24000,48000):raise ValueError('语速或采样率超出范围')
+    language=text_language(body.get('text_lang','zh')) or 'zh'
+    options=body.get('postprocess_options',{})
+    if not isinstance(options,dict) or any(k not in ('breath_guard','eq') for k in options):raise ValueError('无效后处理选项')
+    finishing=profile(config,voice,body.get('postprocess'))
+    finishing.update(options)
+    finishing=profile({'postprocess':finishing},voice)
     i=uuid.uuid4().hex
-    with db() as c:c.execute('INSERT INTO tasks(id,title,text,voice,speed,sr,state,total,created) VALUES(?,?,?,?,?,?,?,?,?)',(i,str(body.get('title') or text[:24])[:120],text,voice,speed,sr,'queued',len(split(text)),time.time()))
     title,origin=title_for(text,str(body.get('title') or ''),str(body.get('filename') or ''))
     if body.get('filename') and title==Path(str(body['filename'])).stem:origin='filename'
-    update(i,title=title,title_source=origin,source_type='synthesis',identity=json.dumps(identity(voice),ensure_ascii=False))
+    with db() as c:
+        c.execute('INSERT INTO tasks(id,title,text,voice,speed,sr,state,total,created,title_source,source_type,identity,text_lang,postprocess,postprocess_config) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)',
+                  (i,title,text,voice,speed,sr,'queued',len(split(text)),time.time(),origin,'synthesis',json.dumps(identity(voice),ensure_ascii=False),language,int(finishing['enabled']),json.dumps(finishing)))
     return {'id':i}
+def merge_audio(segments,target,sr):
+    partial=target.with_name(target.name+'.part')
+    with wave.open(str(partial),'wb') as out:
+        out.setparams((1,2,sr,0,'NONE','not compressed'))
+        for segment in segments:
+            with wave.open(str(segment),'rb') as source:
+                if source.getparams()[:3]!=(1,2,sr):raise ValueError('分段音频格式不一致')
+                while True:
+                    data=source.readframes(32768)
+                    if not data:break
+                    out.writeframesraw(data)
+    os.replace(partial,target)
+
 def worker():
     global CURRENT,HOT
     while True:
@@ -70,9 +94,14 @@ def worker():
         i=task['id'];CURRENT=i;t0=time.monotonic();update(i,state='running',error='')
         folder=DATA/i;folder.mkdir(exist_ok=True)
         try:
+            raw_folder=folder/'raw_segments';raw_folder.mkdir(exist_ok=True)
+            finishing=json.loads(task.get('postprocess_config') or '{}')
+            finishing['enabled']=bool(task.get('postprocess'))
+            processing_ms=task.get('post_ms') or 0
             with (folder/'live.pcm').open('wb') as live:
                 for previous in sorted(folder.glob('[0-9]*.wav'))[:task['done']]:
-                    with wave.open(str(previous),'rb') as source:
+                    raw_previous=raw_folder/previous.name
+                    with wave.open(str(raw_previous if raw_previous.exists() else previous),'rb') as source:
                         while True:
                             chunk=source.readframes(32768)
                             if not chunk:break
@@ -81,34 +110,43 @@ def worker():
                 if next(r for r in rows() if r['id']==i)['state']=='stopping':break
                 target=folder/f'{index:05}.wav'
                 if index<task['done'] and target.exists():continue
-                body=json.dumps({'text':text,'speed':task['speed']}).encode()
+                raw_target=raw_folder/target.name
+                body=json.dumps({'text':text,'speed':task['speed'],'text_lang':task.get('text_lang') or 'zh'}).encode()
                 req=urllib.request.Request(f'http://127.0.0.1:9881/v1/text-to-speech/{task["voice"]}/stream?output_format=pcm&sample_rate={task["sr"]}',data=body,headers={'Content-Type':'application/json','Authorization':'Bearer '+cfg()['gateway'].get('token','')})
                 carry=b'';count=0
-                with urllib.request.urlopen(req,timeout=180) as response, wave.open(str(target)+'.part','wb') as out, (folder/'live.pcm').open('ab',buffering=0) as live:
-                    out.setparams((1,2,task['sr'],0,'NONE','not compressed'))
-                    while True:
-                        raw=response.read1(8192)
-                        if not raw:break
-                        if count==0 and index==task['done']:update(i,first_ms=round((time.monotonic()-t0)*1000))
-                        raw=carry+raw;n=len(raw)&~1;carry=raw[n:];out.writeframesraw(raw[:n]);live.write(raw[:n]);count+=n
-                    if carry or not count:raise ValueError('音频流不完整或为空')
-                os.replace(str(target)+'.part',target)
-                update(i,done=index+1)
+                if raw_target.exists():
+                    with wave.open(str(raw_target),'rb') as source,(folder/'live.pcm').open('ab',buffering=0) as live:
+                        while True:
+                            chunk=source.readframes(32768)
+                            if not chunk:break
+                            live.write(chunk)
+                else:
+                    receive_segment(req,raw_target,folder/'live.pcm',task['sr'],i,index,task['done'],t0)
+                if next(r for r in rows() if r['id']==i)['state']=='stopping':break
+                result=polish_file(raw_target,target,task['sr'],{'postprocess':finishing},task['voice'])
+                processing_ms+=result['elapsed_ms']
+                update(i,done=index+1,post_ms=processing_ms)
             latest=next(r for r in rows() if r['id']==i)
             if latest['state']=='stopping':update(i,state='cancelled');continue
-            with wave.open(str(folder/'master.wav.part'),'wb') as out:
-                out.setparams((1,2,task['sr'],0,'NONE','not compressed'))
-                for segment in sorted(folder.glob('[0-9]*.wav')):
-                    with wave.open(str(segment),'rb') as source:
-                        while True:
-                            data=source.readframes(32768)
-                            if not data:break
-                            out.writeframesraw(data)
-            os.replace(folder/'master.wav.part',folder/'master.wav')
+            segments=sorted(folder.glob('[0-9]*.wav'))
+            merge_audio(segments,folder/'master.wav',task['sr'])
+            merge_audio([raw_folder/s.name if (raw_folder/s.name).exists() else s for s in segments],folder/'raw.wav',task['sr'])
             with wave.open(str(folder/'master.wav'),'rb') as audio:duration=audio.getnframes()/audio.getframerate()
-            update(i,state='completed',duration=duration,total_ms=round((time.monotonic()-t0)*1000))
+            update(i,state='completed',duration=duration,total_ms=round((time.monotonic()-t0)*1000),raw_available=1)
         except Exception as exc:update(i,state='failed',error=str(exc))
         finally:CURRENT=None
+
+def receive_segment(req,target,live_path,sr,i,index,done,t0):
+    carry=b'';count=0
+    with urllib.request.urlopen(req,timeout=180) as response, wave.open(str(target)+'.part','wb') as out, live_path.open('ab',buffering=0) as live:
+        out.setparams((1,2,sr,0,'NONE','not compressed'))
+        while True:
+            raw=response.read1(8192)
+            if not raw:break
+            if count==0 and index==done:update(i,first_ms=round((time.monotonic()-t0)*1000))
+            raw=carry+raw;n=len(raw)&~1;carry=raw[n:];out.writeframesraw(raw[:n]);live.write(raw[:n]);count+=n
+        if carry or not count:raise ValueError('音频流不完整或为空')
+    os.replace(str(target)+'.part',target)
 EXPORT_LOCK=threading.Lock()
 def install(monitor):
     original=monitor.H

@@ -13,6 +13,7 @@ class IdentityTests(unittest.TestCase):
   c=sqlite3.connect(':memory:');c.execute('CREATE TABLE tasks(id TEXT,title TEXT,voice TEXT,text TEXT)')
   c.executemany('INSERT INTO tasks VALUES(?,?,?,?)',[('a','保留标题','si','正文'),('b','导入','si',''),('c','旧作品','unknown','正文')])
   migrate(c);migrate(c)
+  self.assertEqual(c.execute('SELECT text_lang,postprocess,raw_available FROM tasks WHERE id="a"').fetchone(),('zh',0,0))
   self.assertEqual(c.execute('SELECT title,source_type FROM tasks WHERE id="a"').fetchone(),('保留标题','synthesis'))
   self.assertEqual(c.execute('SELECT source_type FROM tasks WHERE id="b"').fetchone()[0],'import')
   self.assertIsNone(identity('unknown')['avatar'])

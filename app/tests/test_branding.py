@@ -9,7 +9,7 @@ class BrandingTests(unittest.TestCase):
  def test_chinese_release_name(self):
   installer=(ROOT/'packaging/installer.iss').read_text(encoding='utf-8')
   self.assertIn('#define AppName "祀音"',installer)
-  self.assertIn('OutputBaseFilename=祀音安装包-1.0.0',installer)
+  self.assertIn('OutputBaseFilename=祀音安装包-{#AppVersion}',installer)
   self.assertIn('祀音.exe',installer)
   self.assertIn("create_window('祀音'",(ROOT/'app/desktop/launch.py').read_text(encoding='utf-8'))
 if __name__=='__main__':unittest.main()

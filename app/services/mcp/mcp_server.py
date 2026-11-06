@@ -24,10 +24,11 @@ import wave
 
 PROTOCOL_VERSION = "2024-11-05"
 SERVER_NAME = "gsv-tts"
-SERVER_VERSION = "1.0.0"
+SERVER_VERSION = "1.1.0"
 
 HERE = os.path.dirname(os.path.abspath(__file__))          # ...\services\mcp
 SERVICES = os.path.dirname(HERE)                           # ...\services
+if SERVICES not in sys.path:sys.path.insert(0,SERVICES)
 ROOT = os.path.dirname(SERVICES)                           # ...\gsv-tts
 CONFIG_PATH = os.path.join(SERVICES, "config.json")
 OUT_DIR = os.path.join(ROOT, "out")
@@ -192,10 +193,15 @@ def tool_tts_list_voices(args):
 
 
 def tool_tts_speak(args):
+    import uuid
+    from core import text_language
+    from postprocess import profile,polish_file
     text = (args.get("text") or "").strip()
     if not text:
         raise ValueError('missing required parameter "text"')
     cfg = load_config()
+    language=text_language(args.get('text_lang'))
+    finishing=profile(cfg,args.get('voice') or cfg.get('default_voice','si'),args.get('postprocess'))
     gw_base = gateway_base(cfg)
     token = gw_token(cfg)
     voice = args.get("voice") or cfg.get("default_voice") or "si"
@@ -215,11 +221,13 @@ def tool_tts_speak(args):
     if not out_path:
         if not os.path.isdir(OUT_DIR):
             os.makedirs(OUT_DIR)
-        out_path = os.path.join(OUT_DIR, "mcp_%s.wav" % time.strftime("%Y%m%d_%H%M%S"))
+        out_path = os.path.join(OUT_DIR, "mcp_%s_%s.wav" % (time.strftime("%Y%m%d_%H%M%S"),uuid.uuid4().hex[:8]))
+    raw_path=os.path.splitext(out_path)[0]+'.raw.wav' if finishing['enabled'] else out_path
+    if os.path.exists(out_path) or os.path.exists(raw_path):raise ValueError('output already exists; choose a new out_path')
 
     url = ("%s/v1/text-to-speech/%s/stream?output_format=pcm&sample_rate=%d"
            % (gw_base, voice, sample_rate))
-    body = json.dumps({"text": text, "speed": speed}).encode("utf-8")
+    body = json.dumps({"text": text, "speed": speed,"text_lang":language}).encode("utf-8")
     req = urllib.request.Request(url, data=body, method="POST")
     req.add_header("Authorization", "Bearer " + token)
     req.add_header("Content-Type", "application/json")
@@ -249,27 +257,34 @@ def tool_tts_speak(args):
         conn.close()
 
     total = time.perf_counter() - t0
-    if not pcm:
+    if not pcm or len(pcm)%2:
         raise RuntimeError("gateway returned an empty PCM stream (0 bytes)")
 
     # write a proper WAV container around the raw PCM
-    with wave.open(out_path, "wb") as w:
+    with wave.open(raw_path, "wb") as w:
         w.setnchannels(1)
         w.setsampwidth(2)
         w.setframerate(sample_rate)
         w.writeframes(bytes(pcm))
 
-    duration = len(pcm) / 2.0 / sample_rate
+    metadata=polish_file(raw_path,out_path,sample_rate,{'postprocess':finishing},voice) if finishing['enabled'] else {'enabled':False,'elapsed_ms':0}
+    with wave.open(out_path,'rb') as audio:
+        duration=audio.getnframes()/sample_rate
+        output_bytes=audio.getnframes()*2
     return {
         "ok": True,
         "path": out_path,
+        "raw_path":raw_path,
+        "text_lang":language or cfg['voices'][voice].get('text_lang','zh'),
+        "postprocess":metadata,
         "voice": voice,
         "speed_factor": speed,
         "sample_rate": sample_rate,
         "duration_s": round(duration, 3),
         "first_byte_ms": round((first or total) * 1000.0, 1) if first else None,
-        "total_ms": round(total * 1000.0, 1),
-        "bytes": len(pcm),
+        "total_ms": round((time.perf_counter()-t0) * 1000.0, 1),
+        "generation_ms":round(total*1000,1),
+        "bytes": output_bytes,
     }
 
 
@@ -391,7 +406,7 @@ def tool_tts_warmup(args):
     gw_base = gateway_base(cfg)
     token = gw_token(cfg)
     text = args.get("text") or (cfg.get("audio") or {}).get("warmup_text") or u"你好。"
-    data = json.dumps({"text": text}, ensure_ascii=False).encode("utf-8")
+    data = json.dumps({"text": text,"postprocess":False}, ensure_ascii=False).encode("utf-8")
     req = urllib.request.Request(gw_base + "/v1/tts", data=data, method="POST")
     req.add_header("Authorization", "Bearer " + token)
     req.add_header("Content-Type", "application/json")
@@ -442,7 +457,9 @@ TOOLS = {
                     "text": {"type": "string", "description": "Text to synthesize (<=2000 chars)."},
                     "voice": {"type": "string", "description": "Voice name; defaults to default_voice (si)."},
                     "speed_factor": {"type": "number", "description": "Speech speed; defaults to the voice's speed_factor (0.88)."},
-                    "out_path": {"type": "string", "description": "Output WAV path; defaults to <PROJECT_ROOT>\\out\\mcp_<ts>.wav."},
+                    "out_path": {"type": "string", "description": "New output WAV path; defaults to app/out/mcp_<ts>_<id>.wav."},
+                    "text_lang":{"type":"string","enum":["zh","en","auto","auto_yue","ja","ko","yue","all_zh","all_ja","all_ko","all_yue"],"description":"Text language; English uses en, mixed Chinese/English uses auto. Does not change reference prompt language."},
+                    "postprocess":{"type":"boolean","description":"Offline breath suppression and EQ; default true. Raw WAV is preserved."},
                 },
                 "required": ["text"],
                 "additionalProperties": False,

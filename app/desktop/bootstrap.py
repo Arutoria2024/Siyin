@@ -19,6 +19,7 @@ def prepare(root=ROOT):
     # Keep internal API local; the authenticated optional LAN entry handles sharing.
     cfg.setdefault('gateway', {})['host']='127.0.0.1'
     cfg.setdefault('network', {'lan_enabled':False, 'lan_port':9890})
+    cfg.setdefault('postprocess', {'enabled':True,'breath_guard':True,'eq':True,'voices':{'si':{'threshold':.05,'ratio':3,'attack':3,'release':120,'range':.45,'nr':10,'nf':-42}}})
     if not cfg.get('gateway',{}).get('token'):cfg.setdefault('gateway',{})['token']=secrets.token_urlsafe(32)
     def save(path,value):
         updated=json.dumps(value,ensure_ascii=False,indent=2)+'\n'

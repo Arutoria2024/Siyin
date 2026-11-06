@@ -2,10 +2,16 @@
 #ifndef SourceRoot
 #define SourceRoot AddBackslash(SourcePath) + ".."
 #endif
+#ifndef AppVersion
+#define AppVersion "1.1.0"
+#endif
+#ifndef ReleaseDir
+#define ReleaseDir AddBackslash(SourceRoot) + "release\祀音-" + AppVersion
+#endif
 [Setup]
 AppId={{915D14F5-22F0-4D1F-9D3D-A5B12301E180}
 AppName={#AppName}
-AppVersion=1.0.0
+AppVersion={#AppVersion}
 AppPublisher=Si Voice Workbench
 DefaultDirName={localappdata}\Programs\SiVoiceWorkbench
 DefaultGroupName={#AppName}
@@ -14,8 +20,8 @@ ArchitecturesAllowed=x64compatible
 ArchitecturesInstallIn64BitMode=x64compatible
 MinVersion=10.0
 DisableProgramGroupPage=yes
-OutputDir={#SourceRoot}\release\祀音-1.0.0
-OutputBaseFilename=祀音安装包-1.0.0
+OutputDir={#ReleaseDir}
+OutputBaseFilename=祀音安装包-{#AppVersion}
 SetupIconFile={#SourceRoot}\app\monitor\si-voice.ico
 UninstallDisplayIcon={app}\app\monitor\si-voice.ico
 Compression=lzma2/fast
@@ -32,8 +38,8 @@ Source: "{#SourceRoot}\祀音.exe"; DestDir: "{app}"; Flags: ignoreversion
 Source: "{#SourceRoot}\祀音.vbs"; DestDir: "{app}"; Flags: ignoreversion
 Source: "{#SourceRoot}\app\engine\*"; DestDir: "{app}\app\engine"; Flags: ignoreversion recursesubdirs
 Source: "{#SourceRoot}\app\python\*"; DestDir: "{app}\app\python"; Excludes: "__pycache__\*,*.pyc"; Flags: ignoreversion recursesubdirs
-Source: "{#SourceRoot}\app\models\*"; DestDir: "{app}\app\models"; Excludes: "manifest.json,*.bak*"; Flags: ignoreversion recursesubdirs
-Source: "{#SourceRoot}\app\frontend\*"; DestDir: "{app}\app\frontend"; Excludes: "__pycache__\*,*.pyc,*.bak*"; Flags: ignoreversion recursesubdirs
+Source: "{#SourceRoot}\app\models\*"; DestDir: "{app}\app\models"; Excludes: "manifest.json,*.bak*,__pycache__\*,*.pyc,*.log"; Flags: ignoreversion recursesubdirs
+Source: "{#SourceRoot}\app\frontend\*"; DestDir: "{app}\app\frontend"; Excludes: "__pycache__\*,*.pyc,*.bak*,frontend\GPT_SoVITS\text\G2PWModel\*,frontend\GPT_SoVITS\text\G2PWModel_1.1.zip"; Flags: ignoreversion recursesubdirs
 Source: "{#SourceRoot}\app\desktop\*.py"; DestDir: "{app}\app\desktop"; Flags: ignoreversion
 Source: "{#SourceRoot}\app\services\*.py"; DestDir: "{app}\app\services"; Flags: ignoreversion recursesubdirs
 Source: "{#SourceRoot}\app\monitor\monitor.py"; DestDir: "{app}\app\monitor"; Flags: ignoreversion

@@ -17,6 +17,7 @@ app/
 `gsv_server.exe` 及同目录 `ggml.dll`、`ggml-base.dll`、`ggml-cpu.dll`、`ggml-vulkan.dll`、MSVC 运行库（`msvcp140.dll`、`vcruntime140*.dll`、`concrt140.dll`）。
 
 - 来源：gsv.cpp 项目的预编译 Windows/Vulkan 发行包。
+- 1.1.0 固定上游 [KakaruHayate/gsv.cpp v0.1.2](https://github.com/KakaruHayate/gsv.cpp/releases/tag/v0.1.2)，提交与成套文件 SHA-256 见 [docs/runtime-lock.json](docs/runtime-lock.json)。必须同时更新 EXE、四个 ggml DLL、文本侧车及 frontend.py；不要混用旧 Vulkan DLL。MIT 许可及第三方声明存于 docs/licenses。
 - 本仓库**不包含**引擎 C++ 源码；请在发布说明中写清上游仓库地址与版本/提交。
 
 ## 2. 模型 app/models
@@ -58,6 +59,8 @@ Pillow==11.1.0
 ```
 
 文本前端（sidecar）依赖见 `app/frontend/frontend/requirements-zh.txt` / `requirements-multi.txt`（无需 torch）。
+
+英文运行时应验证 `from g2p_en import G2p` 能实际导入，不能只看包是否存在。本次内嵌环境 typeguard 4.6.0 与旧 typing_extensions 文件冲突，修复为 typing_extensions 4.15.0（已锁定 wheel 校验和）；NLTK 词典与词性标注数据仍需准备。中文 G2PW 仍依赖 ONNX Runtime。
 
 ## 4. FFmpeg app/tools/ffmpeg
 

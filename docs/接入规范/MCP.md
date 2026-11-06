@@ -1,6 +1,6 @@
 # 祀音 MCP 接入规范
 
-版本：1.0.0；核对日期：2026-11-06。实现：app/services/mcp/mcp_server.py。
+版本：1.1.0；核对日期：2026-11-06。实现：app/services/mcp/mcp_server.py。
 
 ## 1. 用途与传输
 
@@ -151,4 +151,16 @@ name(string) 必填，表示引擎识别的完整音色/权重名称，例如 si
 - 修改默认参数或参考音频后，先重启网关，再用 tts_status 检查就绪状态。
 
 本轮从实际 stdio 进程核对 initialize、tools/list、tts_status；七项名称与参数定义来自运行结果，未为了编写文档修改用户参数或切换模型。
+
+## 7. 1.1.0：英文与离线处理
+
+七个工具名称不变。`tts_speak` 新增可选参数 `text_lang`（`en` 英文、`auto` 中英混合，省略沿用音色语言）和 `postprocess`（布尔，默认按配置开启）。英文不会改变中文参考音频语言。
+
+```json
+{"jsonrpc":"2.0","id":10,"method":"tools/call","params":{"name":"tts_speak","arguments":{"text":"Hello, welcome to Siyin.","voice":"si","text_lang":"en","postprocess":true}}}
+```
+
+返回值增加 `raw_path`、`text_lang`、`postprocess` 元数据和 `generation_ms`。`path` 指交付 WAV，默认自动完成呼吸音抑制与 EQ。`total_ms` 包含后处理；`first_byte_ms` 仍是收到网关音频的时间，不能代表客户端扬声器首声。`raw_path` 为内部原始备份路径，默认另存为同名 `.raw.wav`。
+
+默认文件名含时间与随机后缀；显式 `out_path` 需要为新文件，存在时拒绝覆盖。处理失败保留已写入的原声文件并返回错误。`tts_warmup` 不做后处理。预设与过滤链详见 [升级说明](../英文与后处理升级.md)。
 

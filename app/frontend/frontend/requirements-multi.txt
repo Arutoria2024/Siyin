@@ -1,6 +1,8 @@
 # Extra dependencies for en / ja / ko / yue (install on top of requirements-zh.txt).
 g2p_en
 inflect
+# typeguard used by inflect requires NoExtraItems; stale embedded module breaks English.
+typing_extensions>=4.14,<5
 wordsegment
 requests
 jieba

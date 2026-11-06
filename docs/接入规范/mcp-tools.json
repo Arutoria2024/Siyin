@@ -38,7 +38,28 @@
           },
           "out_path": {
             "type": "string",
-            "description": "Output WAV path; defaults to <PROJECT_ROOT>\\out\\mcp_<ts>.wav."
+            "description": "New output WAV path; defaults to app/out/mcp_<ts>_<id>.wav."
+          },
+          "text_lang": {
+            "type": "string",
+            "enum": [
+              "zh",
+              "en",
+              "auto",
+              "auto_yue",
+              "ja",
+              "ko",
+              "yue",
+              "all_zh",
+              "all_ja",
+              "all_ko",
+              "all_yue"
+            ],
+            "description": "Text language; English uses en, mixed Chinese/English uses auto. Does not change reference prompt language."
+          },
+          "postprocess": {
+            "type": "boolean",
+            "description": "Offline breath suppression and EQ; default true. Raw WAV is preserved."
           }
         },
         "required": [

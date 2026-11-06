@@ -273,7 +273,7 @@ class LanAccess:
                             self.send_header(name, value)
                     if response.status not in (204, 304):
                         self.send_header('Transfer-Encoding', 'chunked')
-                    self.send_header('Access-Control-Expose-Headers', 'X-Sample-Rate, X-Channels, X-Format, X-Voice, Retry-After, X-Audio-Seconds')
+                    self.send_header('Access-Control-Expose-Headers', 'X-Sample-Rate, X-Channels, X-Format, X-Voice, Retry-After, X-Audio-Seconds, X-Postprocess')
                     self.end_headers(); started = True
                     if response.status in (204, 304): return
                     while owner.server is not None:

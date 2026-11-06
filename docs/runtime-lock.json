@@ -1,0 +1,17 @@
+{
+  "repository": "https://github.com/KakaruHayate/gsv.cpp",
+  "tag": "v0.1.2",
+  "commit": "3cd0bd9c0e6f8523fc2d99f3712b1642513db2f3",
+  "patch_url": "https://github.com/KakaruHayate/gsv.cpp/releases/download/v0.1.2/GSV.CPP-win64-patch-0.1.2.zip",
+  "patch_sha256": "bd740335320d09b47d06b808525720f670b51485975c9d0650bc07ea7fa24186",
+  "paired_files": {
+    "gsv_server.exe": "01e729bba8c1c261cfc02a985e90c3df558f5ed9ae95bc5da4920beafe97351d",
+    "ggml-base.dll": "c45cbfc8d1b366d726f8d50d8823a444c06d718beb45dc9c0f213413dfe5bc97",
+    "ggml-cpu.dll": "e1d26e442734ce50b3a82d557194c2be71af7e8d4eb60cc94a705be872825bb6",
+    "ggml-vulkan.dll": "0f0273131bb3ea7e3485042d497d287eb3acd161a443d5f6eb072f88792cc47a",
+    "ggml.dll": "9bfc497e0981b776d79b30cda4e24db12f6c31289eed80db360977b56ca698e3"
+  },
+  "python_dependency_fix": {"typing_extensions": "4.15.0", "wheel_sha256": "f0fa19c6845758ab08074a0cfa8b7aecb71c999ca73d62883bc25cc018c4e548"},
+  "quality_compatibility": {"dit_window": 0, "dit_cfg_off_t": 0},
+  "notes": "Official Windows patch requires an existing complete runtime and models. Replace EXE plus all four ggml DLLs together; retain MSVC runtime. No bundled third-party weights are claimed to be owned by this project."
+}

@@ -25,6 +25,8 @@ def migrate(c):
     columns={r[1] for r in c.execute('PRAGMA table_info(tasks)')}
     for name in ('identity','source_type','title_source'):
         if name not in columns:c.execute('ALTER TABLE tasks ADD COLUMN '+name+' TEXT')
+    for name,definition in {'text_lang':"TEXT DEFAULT 'zh'",'postprocess':'INTEGER DEFAULT 0','postprocess_config':"TEXT DEFAULT '{}'",'post_ms':'REAL DEFAULT 0','raw_available':'INTEGER DEFAULT 0'}.items():
+        if name not in columns:c.execute('ALTER TABLE tasks ADD COLUMN '+name+' '+definition)
     for i,voice,text in c.execute('SELECT id,voice,text FROM tasks WHERE identity IS NULL').fetchall():
         source='synthesis' if text else 'import'
         c.execute('UPDATE tasks SET identity=?,source_type=?,title_source=? WHERE id=?',(json.dumps(identity(voice,source),ensure_ascii=False),source,'legacy',i))

@@ -22,6 +22,7 @@ import http.client
 import json
 import math
 import os
+import re
 import struct
 import threading
 import time
@@ -80,6 +81,11 @@ class Segmenter(object):
                 parts.append(rest)
                 break
             cut = self._find_cut(rest, min_len, max_len)
+            if cut and cut<len(rest) and rest[cut-1].isascii() and rest[cut-1].isalnum() and rest[cut].isascii() and rest[cut].isalnum():
+                # Do not bisect English words when the ordinary punctuation
+                # splitter reaches its character cap.
+                boundary=list(re.finditer(r'\s+|(?<=[\u3400-\u9fff])(?=[A-Za-z])',rest[:cut]))
+                if boundary and boundary[-1].end()>0:cut=boundary[-1].end()
             if not cut:
                 parts.append(rest)
                 break
@@ -191,6 +197,13 @@ def _to_s16(frames):
 class TTSError(Exception):
     pass
 
+TEXT_LANGUAGES = ('zh', 'en', 'auto', 'auto_yue', 'ja', 'ko', 'yue', 'all_zh', 'all_ja', 'all_ko', 'all_yue')
+
+def text_language(value):
+    if value is not None and value not in TEXT_LANGUAGES:
+        raise ValueError('unsupported text_lang')
+    return value
+
 
 class Engine(object):
     def __init__(self, cfg):
@@ -217,7 +230,7 @@ class Engine(object):
             raise TTSError('voice %s has no reference audio configured' % name)
         return name, meta
 
-    def payload(self, text, voice=None, speed=1.0, stream=True, sample_steps=None):
+    def payload(self, text, voice=None, speed=1.0, stream=True, sample_steps=None, text_lang=None):
         name, meta = self.voice_params(voice)
         switch_ok = bool(self.cfg.get('engine', {}).get('allow_voice_switch', False))
         # sample_steps must never be 0: a 0-step DiT answers HTTP 200 with an
@@ -231,7 +244,7 @@ class Engine(object):
             steps = 4
         body = {
             'text': text,
-            'text_lang': meta.get('text_lang', 'zh'),
+            'text_lang': text_language(text_lang) or meta.get('text_lang', 'zh'),
             'ref_audio_path': meta['ref_audio_path'],
             'prompt_text': meta['prompt_text'],
             'prompt_lang': meta.get('prompt_lang', 'zh'),
@@ -239,6 +252,10 @@ class Engine(object):
             'sample_steps': steps,
             'text_split_method': 'cut0',
             'seed': self.seed,
+            # Preserve pre-upgrade attention behavior until optional approximations
+            # have been auditioned for the installed voice.
+            'dit_window': int(self.cfg.get('engine',{}).get('dit_window',0)),
+            'dit_cfg_off_t': float(self.cfg.get('engine',{}).get('dit_cfg_off_t',0)),
         }
         try:
             sf = float(speed)
@@ -253,9 +270,9 @@ class Engine(object):
         return body
 
     # -- streaming request -------------------------------------------------
-    def iter_pcm(self, text, voice=None, speed=1.0, sample_steps=None):
+    def iter_pcm(self, text, voice=None, speed=1.0, sample_steps=None, text_lang=None):
         """Yield raw 48k/16bit/mono PCM bytes for one segment."""
-        body = json.dumps(self.payload(text, voice, speed, True, sample_steps))
+        body = json.dumps(self.payload(text, voice, speed, True, sample_steps, text_lang))
         conn = http.client.HTTPConnection(self.host, self.port, timeout=self.timeout)
         try:
             conn.request('POST', '/tts', body, {'content-type': 'application/json'})
@@ -519,7 +536,7 @@ class Synth(object):
             emit(frames, final)
 
         try:
-            for raw in self.engine.iter_pcm(job.text, voice, speed, sample_steps):
+            for raw in self.engine.iter_pcm(job.text, voice, speed, sample_steps, getattr(job,'text_lang',None)):
                 if job.ttfb is None:
                     job.ttfb = time.perf_counter()
                 if carry:
@@ -538,6 +555,8 @@ class Synth(object):
                 feed(out)
             if carry:
                 raise TTSError('odd trailing byte from engine')
+            if not job.pcm_bytes:
+                raise TTSError('engine returned no audio for this segment; check text language and sidecar dependencies')
             feed(np.zeros(0), final=True)
             job.end = time.perf_counter()
             exp = self._expected_s(job.text)
@@ -581,7 +600,7 @@ class Synth(object):
                     self.stats.recent.append({'state':state,'queue_ms':round((start-queued)*1000),'first_ms':round((first-start)*1000) if first else None,'total_ms':round(elapsed*1000),'audio_s':round(seconds,3),'rtf':round(elapsed/seconds,3) if seconds else None,'time':time.time()})
 
     def _stream_serialized(self, text, voice=None, speed=1.0, out_sr=None, pause_ms=None,
-               sample_steps=None):
+               sample_steps=None, text_lang=None):
         """Yield PCM (s16le, mono) chunks in order, as soon as they exist."""
         sr = int(out_sr or self.out_sr)
         segs = self.segmenter.split(text)
@@ -591,6 +610,7 @@ class Synth(object):
         pause = self.pause_ms if pause_ms is None else int(pause_ms)
         jobs = [_Job(i, s, i == len(segs) - 1, self.max_queued_bytes)
                 for i, s in enumerate(segs)]
+        for job in jobs:job.text_lang=text_language(text_lang)
         sem = threading.Semaphore(self.max_inflight)
         threads = []
         cancelled = threading.Event()
@@ -631,9 +651,11 @@ class Synth(object):
                 t.join()
 
     def synthesize(self, text, voice=None, speed=1.0, out_sr=None, pause_ms=None,
-                   sample_steps=None):
+                   sample_steps=None, text_lang=None, postprocess=None):
         """Whole utterance as one PCM blob."""
-        return b''.join(self.stream(text, voice, speed, out_sr, pause_ms, sample_steps))
+        pcm = b''.join(self.stream(text, voice, speed, out_sr, pause_ms, sample_steps, text_lang))
+        from postprocess import polish_pcm
+        return polish_pcm(pcm, int(out_sr or self.out_sr), self.cfg, voice or self.engine.default_voice, postprocess)[0]
 
 
 def load_config(path):

@@ -28,7 +28,7 @@ import traceback
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-ROOT = os.path.dirname(HERE)                 # <PROJECT_ROOT>\services
+ROOT = os.path.dirname(HERE)                 # F:\gsv-tts\services
 sys.path.insert(0, ROOT)
 import core
 
@@ -309,6 +309,8 @@ class Handler(BaseHTTPRequestHandler):
             'service': 'gsv-tts-gateway',
             'engine': engine,
             'default_voice': CONFIG.get('default_voice'),
+            'text_languages':list(core.TEXT_LANGUAGES),
+            'stream_postprocess':False,
             'voices': sorted((CONFIG.get('voices') or {}).keys()),
             'stats': SYNTH.stats.snapshot(),
             'active_requests': LIMITER.snapshot(),
@@ -437,6 +439,12 @@ class Handler(BaseHTTPRequestHandler):
                     400, 'sample_rate must be 24000 or 48000, got %d' % sr)
 
             # -- optional knobs, unknown ones ignored on purpose -------------
+            try:
+                language=core.text_language(params.get('text_lang'))
+                if params.get('postprocess') not in (None,False):
+                    raise ValueError('real-time streams are raw; use POST /v1/tts for postprocessing')
+            except ValueError as exc:
+                return self.send_error_json(400,str(exc))
             speed = params.get('speed', params.get('speed_factor'))
             if speed is None:
                 speed = self.default_speed(voice)
@@ -469,6 +477,7 @@ class Handler(BaseHTTPRequestHandler):
             self.send_header('X-Channels', '1')
             self.send_header('X-Format', 'pcm_s16le')
             self.send_header('X-Voice', voice)
+            self.send_header('X-Postprocess', 'raw')
             self._cors()
             self.end_headers()
             started = True
@@ -477,7 +486,7 @@ class Handler(BaseHTTPRequestHandler):
 
             first = None
             nbytes = 0
-            for chunk in SYNTH.stream(text, voice, speed, sr, sample_steps=steps):
+            for chunk in SYNTH.stream(text, voice, speed, sr, sample_steps=steps,text_lang=language):
                 if first is None:
                     first = time.perf_counter() - t0
                 nbytes += len(chunk)
@@ -521,6 +530,8 @@ class Handler(BaseHTTPRequestHandler):
             params = self.params(query, body)
             try:
                 text, voice, speed, sr, fmt = self._resolve(params)
+                language=core.text_language(params.get('text_lang'))
+                if params.get('postprocess') not in (None,False):raise ValueError('real-time streams are raw; use POST /v1/tts')
             except ValueError as exc:
                 return self.send_error_json(400, str(exc))
             t0 = time.perf_counter()
@@ -531,7 +542,7 @@ class Handler(BaseHTTPRequestHandler):
             if fmt == 'wav':
                 self._write_chunk(core.wav_header(sr, data_bytes=0xFFFFFFFF))
             try:
-                for chunk in SYNTH.stream(text, voice, speed, sr):
+                for chunk in SYNTH.stream(text, voice, speed, sr,text_lang=language):
                     if first is None:
                         first = time.perf_counter() - t0
                     nbytes += len(chunk)
@@ -557,16 +568,26 @@ class Handler(BaseHTTPRequestHandler):
             params = self.params(query, body)
             try:
                 text, voice, speed, sr, _fmt = self._resolve(params)
+                language=core.text_language(params.get('text_lang'))
+                finishing=params.get('postprocess')
+                if finishing is not None and not isinstance(finishing,bool):raise ValueError('postprocess must be boolean')
+                from postprocess import profile
+                finishing_profile=profile(CONFIG,voice or CONFIG.get('default_voice','si'),finishing)
             except ValueError as exc:
                 return self.send_error_json(400, str(exc))
             t0 = time.perf_counter()
-            pcm = SYNTH.synthesize(text, voice, speed, sr)
+            try:
+                pcm = SYNTH.synthesize(text, voice, speed, sr,text_lang=language,postprocess=finishing)
+            except Exception as exc:
+                LOG.exception('whole synthesis failed')
+                return self.send_error_json(500,str(exc))
             data = core.wav_header(sr, data_bytes=len(pcm)) + pcm
             self.send_response(200)
             self.send_header('Content-Type', 'audio/wav')
             self.send_header('Content-Length', str(len(data)))
             self.send_header('Cache-Control', 'no-store')
             self.send_header('X-Audio-Seconds', '%.2f' % (len(pcm) / 2.0 / sr))
+            self.send_header('X-Postprocess','finished' if finishing_profile['enabled'] else 'raw')
             self._cors()
             self.end_headers()
             self.wfile.write(data)
@@ -611,7 +632,7 @@ def main():
         try:
             t0 = time.perf_counter()
             SYNTH.synthesize(CONFIG.get('audio', {}).get('warmup_text', '你好。'),
-                             out_sr=24000)
+                             out_sr=24000,postprocess=False)
             LOG.info('warmup done in %.2fs', time.perf_counter() - t0)
         except Exception as exc:                       # noqa: BLE001
             LOG.warning('warmup failed: %s', exc)

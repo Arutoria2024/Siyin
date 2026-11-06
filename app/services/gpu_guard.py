@@ -1,16 +1,20 @@
 """Cross-process serialization for utterances and model changes."""
 import contextlib, ctypes, os, threading
 _lock=threading.Lock()
+_named_locks={}
+_named_guard=threading.Lock()
 @contextlib.contextmanager
-def hold():
+def hold(name='Local\\SiVoiceInference'):
     if os.name!='nt':
-        with _lock:yield
+        with _named_guard:
+            lock=_named_locks.setdefault(name,threading.Lock())
+        with lock:yield
         return
     k=ctypes.windll.kernel32
     k.CreateMutexW.restype=ctypes.c_void_p
     k.WaitForSingleObject.argtypes=[ctypes.c_void_p,ctypes.c_uint32]
     k.ReleaseMutex.argtypes=[ctypes.c_void_p];k.CloseHandle.argtypes=[ctypes.c_void_p]
-    handle=k.CreateMutexW(None,False,'Local\\SiVoiceInference')
+    handle=k.CreateMutexW(None,False,name)
     if not handle:raise OSError('Cannot create inference mutex')
     try:
         result=k.WaitForSingleObject(handle,0xFFFFFFFF)

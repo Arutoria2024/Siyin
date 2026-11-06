@@ -48,6 +48,12 @@
     "lan_enabled": false,
     "lan_port": 9890
   },
+  "postprocess": {
+    "enabled": true,
+    "breath_guard": true,
+    "eq": true,
+    "voices": {"si": {"threshold": 0.05, "ratio": 3, "attack": 3, "release": 120, "range": 0.45, "nr": 10, "nf": -42}}
+  },
   "tts_defaults": {
     "speed_factor": 0.88,
     "sample_steps": 4

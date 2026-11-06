@@ -3,6 +3,10 @@ using System.Diagnostics;
 using System.IO;
 using System.Text;
 using System.Windows.Forms;
+[assembly: System.Reflection.AssemblyTitle("祀音")]
+[assembly: System.Reflection.AssemblyProduct("祀音语音工作台")]
+[assembly: System.Reflection.AssemblyVersion("1.1.0.0")]
+[assembly: System.Reflection.AssemblyFileVersion("1.1.0.0")]
 internal static class Launcher {
     private static readonly object LogLock = new object();
     [STAThread] private static int Main() {

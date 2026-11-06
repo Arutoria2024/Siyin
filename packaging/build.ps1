@@ -1,5 +1,9 @@
+param([string]$Version='1.1.0',[string]$ReleaseRoot='', [string]$BuildTemp='')
 $ErrorActionPreference = 'Stop'
 $projectRoot = Split-Path -Parent $PSScriptRoot
+if (-not $ReleaseRoot) { $ReleaseRoot = Join-Path $projectRoot 'release' }
+if (-not $BuildTemp) { $BuildTemp = Join-Path $PSScriptRoot 'tmp' }
+$releaseDir = Join-Path $ReleaseRoot ('祀音-' + $Version)
 Push-Location (Join-Path $projectRoot 'app/ui')
 try { & npm.cmd run build; if ($LASTEXITCODE) { throw 'Frontend compilation failed' } }
 finally { Pop-Location }
@@ -16,7 +20,7 @@ Move-Item -LiteralPath $compiledExe -Destination $oldExe
 if ($LASTEXITCODE) { throw 'Tests failed' }
 # Run api_smoke.py, mcp_smoke.py and release_integration.py against a ready backend
 # before publishing. The integration test intentionally creates long audio.
-$env:TEMP = Join-Path $PSScriptRoot 'tmp'
+$env:TEMP = $BuildTemp
 $env:TMP = $env:TEMP
 New-Item -ItemType Directory -Force $env:TEMP | Out-Null
 $iscc = $env:SIYIN_ISCC
@@ -29,9 +33,8 @@ if (-not $iscc) {
     $iscc = $candidates | Where-Object { Test-Path -LiteralPath $_ } | Select-Object -First 1
 }
 if (-not $iscc) { throw 'Inno Setup compiler not found. Set SIYIN_ISCC to ISCC.exe.' }
-& $iscc "/DSourceRoot=$projectRoot" (Join-Path $PSScriptRoot 'installer.iss')
+& $iscc /Q "/DSourceRoot=$projectRoot" "/DAppVersion=$Version" "/DReleaseDir=$releaseDir" (Join-Path $PSScriptRoot 'installer.iss')
 if ($LASTEXITCODE) { throw 'Installer compilation failed' }
-$releaseDir = Join-Path $projectRoot 'release\祀音-1.0.0'
 $checksums = Get-ChildItem -LiteralPath $releaseDir -File |
     Where-Object { $_.Extension -in '.exe','.bin' } | Sort-Object Name | ForEach-Object {
         $hash = (Get-FileHash -LiteralPath $_.FullName -Algorithm SHA256).Hash.ToLower()

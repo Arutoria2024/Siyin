@@ -1,6 +1,6 @@
 # 祀音 HTTP API 接入规范
 
-版本：1.0.0；核对日期：2026-11-06（含局域网开关更新）。实现：app/services/gateway/gateway.py、app/desktop/lan_access.py。
+版本：1.1.0；核对日期：2026-11-06（英文与离线后处理更新）。实现：app/services/gateway/gateway.py、app/desktop/lan_access.py。
 
 ## 1. 服务地址与职责
 
@@ -259,4 +259,18 @@ async function synthesizePcm({base, key, text, onSamples, signal}) {
 不直接转发 9880、9882 或本机管理端口。局域网入口对 API GET/POST 均要求 Key；若选本机 9881 作为隧道终点，其健康/音色 GET 仍需在公网入口补充鉴权。代理的限流应以实际可信客户端地址为准；当前网关会读取 X-Forwarded-For，局域网转发会覆盖为直接连接方 IP，不能把它单独当作公网抗滥用保障。
 
 未实施公网端到端验证。不要在客户端中把 0.0.0.0 作为访问地址。
+
+## 11. 1.1.0：英文与成品后处理
+
+所有合成请求新增可选 `text_lang`：`en` 英文，`auto` 中英混合；省略时沿用音色语言（si 为 zh）。还接受 `zh/auto_yue/ja/ko/yue/all_zh/all_ja/all_ko/all_yue`，具体音色跨语言能力需验证；本轮验证中文、英文、中英混合。不改变中文参考音频的 `prompt_lang`。
+
+流式接口维持原声 PCM，`postprocess` 只可省略或为 false；传 true 返回 400。不能等流已发送后再补处理，也不改变 PCM 包契约。
+
+完整 WAV 接口 `POST /v1/tts` 新增可选布尔 `postprocess`，默认读取配置（未配置默认开启）。后处理为呼吸抑制、EQ、动态与响度；响应 `X-Postprocess: finished/raw`。离线处理结束后返回，耗时包含实际处理时间。缺少 FFmpeg 或处理失败返回 500，不静默当成已处理。关闭时保持原始 PCM：
+
+```json
+{"text":"Hello, welcome to Siyin.","voice":"si","text_lang":"en","postprocess":true}
+```
+
+此接口只返回 WAV，不自动为调用方存档原声。需要原声和交付版本一同保存，可使用工作台任务或 MCP `tts_speak`。母版与处理参数说明见 [英文与后处理升级](../英文与后处理升级.md)。网关常驻配置变更仍需重启；实时流不会因此增加整轨等待时间。
 
