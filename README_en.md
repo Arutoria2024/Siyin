@@ -19,7 +19,7 @@
 This release is a **character-specific voice edition**: a fine-tuned voice of **"Shi" (祀)** from *Arknights: Endfield*, built for **fast speech synthesis of that character**. A general-purpose edition is still in development.
 
 - **All-in-one, install and use** — engine, text frontend, models and voice are bundled. **No training, no fine-tuning, no voice cloning**, and no reference audio to prepare.
-- **Very fast** — ~869 ms per request, **RTF ≈ 0.256** (1 s of audio in ~0.26 s) on an RTX 2060 6GB.
+- **Very fast** — **RTF ≈ 0.2** measured on an RTX 2060 6GB (about 0.2 s of compute per 1 s of audio; 0.2–0.26 depending on text), i.e. roughly 4–5× faster than real time.
 - **Low load** — ~2.7–2.9 GB VRAM; models stay resident after the first load.
 - **Broad GPU support** — ggml **Vulkan** backend: NVIDIA / AMD / Intel, discrete or integrated.
 
@@ -27,7 +27,7 @@ This release is a **character-specific voice edition**: a fine-tuned voice of **
 
 | Tier | Models | Status |
 |---|---|---|
-| ✅ Tested | NVIDIA GeForce RTX 2060 6GB | stable; VRAM ~2.7–2.9 GB, RTF 0.256 |
+| ✅ Tested | NVIDIA GeForce RTX 2060 6GB | stable; VRAM ~2.7–2.9 GB, **RTF ≈ 0.2** |
 | 🟢 Recommended | NVIDIA RTX 20 / 30 / 40, GTX 16 series (≥4GB) | Vulkan backend, expected to work; not individually tested |
 | 🟢 Recommended | AMD Radeon RX 6000 / 7000 | same as above |
 | 🟡 Try | Intel Arc A/B, Vulkan-capable iGPU | may be slower with shared memory |
