@@ -7,14 +7,19 @@
 **本地优先的 Windows 语音合成工作台**
 在 gsv.cpp / GPT-SoVITS v5turbo 推理后端之上，提供文字与 TXT 合成、流式试听、任务队列、作品库、多格式导出、性能监控，以及 HTTP API 与 MCP 接入。
 
+> 当前版本是《明日方舟：终末地》角色 **「祀」** 的**专用音色版**，主打快速合成该角色语音；**通用音色版仍在开发中**。
+>
+> **一体化软件，安装即用**：内置推理引擎、文本前端、模型与音色，装好双击就能合成——**无需训练、无需微调、无需克隆音色**，也不用自己准备参考音频。
+
 [![Release](https://img.shields.io/github/v/release/Arutoria2024/Siyin?color=6f4e37&label=Release)](https://github.com/Arutoria2024/Siyin/releases)
 [![License](https://img.shields.io/github/license/Arutoria2024/Siyin?color=2f6f4f&label=License)](LICENSE)
 [![Platform](https://img.shields.io/badge/Platform-Windows%2010%2F11-0078D6?logo=windows)](https://www.microsoft.com/windows)
 [![Python](https://img.shields.io/badge/Python-3.10-3776AB?logo=python&logoColor=white)](https://www.python.org/)
 [![React](https://img.shields.io/badge/UI-React%2019%20%2B%20Vite-61DAFB?logo=react)](app/ui)
 [![Last Commit](https://img.shields.io/github/last-commit/Arutoria2024/Siyin?color=8a6d3b)](https://github.com/Arutoria2024/Siyin/commits)
+[![Purpose](https://img.shields.io/badge/Purpose-角色「祀」专用音色-6f4e37)](README.md#-项目定位与用途)
 
-[功能特性](#-功能特性) · [下载安装](#-下载与安装) · [从源码构建](#-从源码构建) · [目录结构](#-目录结构) · [API 与 MCP](#-api-与-mcp) · [文档](#-文档) · [贡献](#-参与贡献)
+[项目定位](#-项目定位与用途) · [功能特性](#-功能特性) · [显卡支持](#-显卡支持与性能) · [下载安装](#-下载与安装) · [从源码构建](#-从源码构建) · [目录结构](#-目录结构) · [API 与 MCP](#-api-与-mcp) · [文档](#-文档) · [贡献](#-参与贡献)
 
 </div>
 
@@ -26,6 +31,30 @@
 
 - **本地优先**：模型推理、合成与作品全部在本机完成，默认所有内部服务仅监听回环地址（127.0.0.1），数据不出机器。
 - **默认音色 `si`（祀）**：GPT-SoVITS **v5turbo**，语速 `0.88`、采样步数 `4`、输出 24kHz 单声道（可选 48kHz）。
+
+## 🎯 项目定位与用途
+
+> **本版本是「角色专用音色版」**：音色为《明日方舟：终末地》角色 **「祀」** 微调，核心用途是**快速合成该角色的语音**。面向任意音色的**通用版仍在开发中**，完成后会单独发布。
+
+> **一体化 · 安装即用**：推理引擎、文本前端、模型与音色全部内置打包，**不需要训练、不需要微调、不需要克隆音色**，也不需要准备参考音频或配置环境；安装后直接输入文字即可合成。
+
+- **专为角色「祀」微调**：音色、语速（0.88）与韵律按该角色调校，开箱即用，不需要自己训练。
+- **出速极快**：实测 RTX 2060 6GB 上单请求约 **869 ms**、**RTF ≈ 0.256**——生成 1 秒音频只需约 0.26 秒，实时余量约 **3.9×**；长文按句段流式输出，边生成边播。
+- **负载低**：模型常驻显存约 **2.7–2.9 GB**，稳态不 OOM；Vulkan 后端下 CPU 线程数几乎不影响速度，笔记本也能跑。
+- **显卡适配性好**：走 ggml **Vulkan** 后端，NVIDIA / AMD / Intel 的独显与核显都可尝试；没有 Vulkan 也能退回 CPU，但约慢 14.6 倍。
+- **本地优先**：不联网、不上传文本与音频，密钥与作品都在本机。
+
+## 🖥️ 显卡支持与性能
+
+| 类别 | 型号 | 状态 |
+|---|---|---|
+| ✅ **已实测** | NVIDIA GeForce RTX 2060 6GB（驱动 616.56；Win11 / Ryzen 7 4800H / 16GB） | 稳定；显存约 2.7–2.9 GB，RTF 0.256 |
+| 🟢 **推荐** | NVIDIA RTX 20 / 30 / 40 系列、GTX 16 系列（≥4GB 显存） | Vulkan 后端，预期可用，未逐一实测 |
+| 🟢 **推荐** | AMD Radeon RX 6000 / 7000 系列 | 同上 |
+| 🟡 **可尝试** | Intel Arc A / B 系列、支持 Vulkan 的核显 | 同上；共享显存时可能偏慢 |
+| 🔴 **不推荐** | 不支持 Vulkan 的老卡 / 纯 CPU 模式 | 可用，但约慢 14.6×（12669 ms vs 869 ms） |
+
+> 显存建议 **≥ 4GB**（实测占用约 2.9GB），6GB 更稳。笔记本长时间压测会热降频（实测 82–85°C 后 SM 时钟由 2100MHz 降到 750–1300MHz），属硬件散热限制，不是软件问题。
 
 <div align="center">
   <img src="assets/screenshot-network.png" alt="网络与接入设置界面" width="720" />
