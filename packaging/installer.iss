@@ -21,7 +21,8 @@ ArchitecturesInstallIn64BitMode=x64compatible
 MinVersion=10.0
 DisableProgramGroupPage=yes
 OutputDir={#ReleaseDir}
-OutputBaseFilename=祀音安装包-{#AppVersion}
+; ASCII output name: GitHub Release keeps it as-is, so users never rename slices
+OutputBaseFilename=Siyin-{#AppVersion}-setup
 SetupIconFile={#SourceRoot}\app\monitor\si-voice.ico
 UninstallDisplayIcon={app}\app\monitor\si-voice.ico
 Compression=lzma2/fast
