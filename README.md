@@ -28,6 +28,8 @@
 
 ## 📖 简介
 
+本机开发副本的启动方式和正式版隔离约定见 [开发说明](开发说明.md)。源码仍按忽略规则排除模型、运行时、私人配置和作品；开发完成后单独部署正式版。
+
 1.1.0 更新：跟进 [gsv.cpp v0.1.2](https://github.com/KakaruHayate/gsv.cpp/releases/tag/v0.1.2)，支持英文与中英混合正文，新作品默认自动完成呼吸音抑制与 EQ 后处理。日常合成、播放和导出方式不变。详见[升级说明](docs/英文与后处理升级.md)、[实际验证记录](docs/验收-1.1.0.md)与[上游版本锁定](docs/runtime-lock.json)。
 
 > 下载最新版请前往 [Releases](https://github.com/Arutoria2024/Siyin/releases)。
@@ -89,13 +91,31 @@
 
 ## 📦 下载与安装
 
-前往 [**Releases**](https://github.com/Arutoria2024/Siyin/releases) 下载最新版本。
+前往 [**Releases**](https://github.com/Arutoria2024/Siyin/releases) 下载最新版本，两种形态任选其一。
 
-安装器由**三个文件**组成（安装包 `*.exe` + 两个分卷 `*.bin`，总量约 2.9 GB），请**全部下载到同一目录**后再双击运行 exe；ZIP 分发请先完整解压。
+### 方式一：安装版（推荐）
 
-**系统要求**：Windows 10/11 x64 · WebView2 Runtime · 支持 Vulkan 的显卡（建议显存 ≥ 6GB）· 约 4GB 安装空间。
+| 文件 | 说明 |
+|---|---|
+| `Siyin-1.1.0-setup.exe` | 安装器主程序 |
+| `Siyin-1.1.0-setup-1.bin` | 分卷 1 |
+| `Siyin-1.1.0-setup-2.bin` | 分卷 2 |
+
+三个文件下载到**同一文件夹**，直接双击 `Siyin-1.1.0-setup.exe`。**文件名请勿修改**——安装器按固定名字查找分卷，改名会导致安装不完整（表现为「合成失败 / IncompleteRead」）。
+
+### 方式二：免安装版（Portable）
+
+| 文件 | 说明 |
+|---|---|
+| `Siyin-1.1.0-portable-win64.zip` | 解压即用，不写注册表、不留系统残留 |
+
+解压到任意目录（建议纯英文路径、不要放 C 盘根目录），双击 `祀音.exe` 即可；卸载就是删文件夹，首次启动自动生成独立 API Key。
+
+**系统要求**：Windows 10/11 x64 · WebView2 Runtime · 支持 Vulkan 的显卡（建议显存 ≥ 4GB，6GB 更稳）· 约 4GB 磁盘空间。
 
 > 首次加载模型约需 1～2 分钟。关闭窗口收进托盘；需要释放模型时用托盘菜单「停止服务并退出」。
+> 安装版与免安装版使用同一组端口（9880/9881/9882/9888），**不要同时运行两套**。
+
 
 ## 🚀 从源码构建
 
